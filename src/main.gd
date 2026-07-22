@@ -144,6 +144,7 @@ func _on_player_died() -> void:
 
 
 func _on_level_completed(next_level: String) -> void:
+	Sfx.play_ui(Sfx.LEVEL_COMPLETE, -4.0)
 	_set_state(&"complete")
 	var stats := "Time %s     Kills %d / %d" % [Game.format_time(), Game.kills, Game.enemies_total]
 	var options: Array = []

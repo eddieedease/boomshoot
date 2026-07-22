@@ -34,15 +34,22 @@ the button hint follows whichever device you last touched.
 
 ## Building levels
 
-Enable the **Boomshoot** dock (it ships enabled) and open
-`levels/demo_level.tscn` to see the workflow.
+**See [LEVEL_EDITING.md](LEVEL_EDITING.md) for the full guide** — editor setup
+for top-down work, scale reference, and troubleshooting.
 
-The dock drops a part **where the 3D viewport camera is aimed**, projected onto
-the ground plane and snapped to the grid you picked. New parts are parented to
-whatever is selected, so selecting a room and adding a block nests the block
-inside it. Every placement is a single undo step.
+The short version: Doom maps were drawn top-down, and dragging gizmos in a
+perspective 3D view is the wrong tool. You mostly don't have to. Select a room,
+click **Attach Room → North** in the dock, and you get a correctly aligned
+neighbour with the doorway already cut — no coordinates, no dragging. For
+everything else, set the 3D view to **Top + Orthogonal** with snapping on and it
+behaves like a plan view.
 
-Then select the part and tune it in the Inspector. Geometry rebuilds live.
+The dock also drops parts **where the 3D viewport camera is aimed**, projected
+onto the ground plane and snapped to your chosen grid, parented to the current
+selection, as one undo step. Then tune values in the Inspector — geometry
+rebuilds live.
+
+Open `levels/demo_level.tscn` to see it all in place.
 
 ### The parts
 
@@ -107,6 +114,7 @@ src/
   entities/   enemy.gd, grunt.tscn
   ui/         hud.gd, overlay_menu.gd        (built in code, no scene files)
   fx/         fx.gd                          (impact bursts)
+  core/sfx.gd                                (fire-and-forget sound)
   main.gd/tscn                               (level loading, spawn, menus)
 addons/boomshoot_kit/                        (the editor dock)
 tools/                                       (one-shot generators + smoke test)
@@ -124,6 +132,18 @@ objectives hook in later without surgery.
 base class. The weapon walks up from the collider to find it, so child collision
 shapes work too.
 
+### Sound
+
+`Sfx.play_at(node, stream)` spawns a positional voice that frees itself;
+`Sfx.play_ui(stream)` is the non-positional version for the player's own weapon
+and for UI. Nothing owns an `AudioStreamPlayer`. Pitch is jittered per shot by
+default, because a clip that repeats bit-identically is what makes a game sound
+cheap.
+
+Wired up: pistol shot, dry fire, reload, enemy alert/attack/pain/death, door
+open/close/locked, pickup, player hurt, level complete. All of it is synthesised
+by `tools/gen_audio.gd` — no samples, no licences.
+
 ### Adding a second gun
 
 Create a new `WeaponData` resource, point it at some sprites, and add it to the
@@ -135,6 +155,9 @@ player's `Weapons` node array. `pellets` + `spread_degrees` gives you a shotgun;
 ## Tools
 
 ```bash
+# Regenerate all placeholder sounds (synthesised, written as 16-bit mono WAV)
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script res://tools/gen_audio.gd
+
 # Regenerate all placeholder art (textures and sprites are drawn in code)
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script res://tools/gen_art.gd
 
@@ -161,5 +184,5 @@ Groundwork already in place for the immersive sim:
 - **The exit** gates on keys or on clearing the level, as data.
 - **The signal bus** is the seam for senses, alarms and factions.
 
-Obvious next steps: sound, a second weapon, enemy ranged attacks, saving, and an
-inventory that makes the keycards into real items.
+Obvious next steps: a second weapon, enemy ranged attacks, footsteps and
+ambient loops, saving, and an inventory that makes the keycards into real items.

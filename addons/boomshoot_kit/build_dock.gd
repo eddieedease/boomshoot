@@ -20,6 +20,15 @@ const ENTITIES := ["Grunt"]
 
 const GRUNT_SCENE := "res://src/entities/grunt.tscn"
 
+## Compass directions for Attach Room. `axis` is the direction to grow in,
+## `depth` says whether that direction measures the room's Z (true) or X.
+const ATTACH := {
+	"North": {"axis": Vector3(0, 0, -1), "source_wall": &"wall_north", "new_wall": &"wall_south", "depth": true},
+	"South": {"axis": Vector3(0, 0, 1), "source_wall": &"wall_south", "new_wall": &"wall_north", "depth": true},
+	"West": {"axis": Vector3(-1, 0, 0), "source_wall": &"wall_west", "new_wall": &"wall_east", "depth": false},
+	"East": {"axis": Vector3(1, 0, 0), "source_wall": &"wall_east", "new_wall": &"wall_west", "depth": false},
+}
+
 var _snap := 1.0
 var _snap_button: OptionButton
 var _status: Label
@@ -62,6 +71,7 @@ func _build_ui() -> void:
 	snap_row.add_child(_snap_button)
 
 	_section("Geometry", GEOMETRY)
+	_attach_section()
 	_section("Gameplay", GAMEPLAY)
 	_section("Pickups", PICKUPS)
 	_section("Entities", ENTITIES)
@@ -84,6 +94,35 @@ func _build_ui() -> void:
 	_status.add_theme_font_size_override("font_size", 11)
 	_status.add_theme_color_override("font_color", Color(0.55, 0.75, 0.55))
 	add_child(_status)
+
+
+## The fastest way to grow a level: pick a room, pick a compass direction, get a
+## correctly aligned neighbour with the doorway already cut. No arithmetic.
+func _attach_section() -> void:
+	add_child(HSeparator.new())
+
+	var label := Label.new()
+	label.text = "Attach Room to Selection"
+	label.add_theme_color_override("font_color", Color(0.95, 0.72, 0.35))
+	add_child(label)
+
+	var hint := Label.new()
+	hint.text = "Butts a new room onto the selected room and cuts a doorway."
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	hint.add_theme_font_size_override("font_size", 11)
+	add_child(hint)
+
+	var grid := GridContainer.new()
+	grid.columns = 2
+	add_child(grid)
+
+	for direction: String in ATTACH:
+		var button := Button.new()
+		button.text = direction
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_attach_room.bind(direction))
+		grid.add_child(button)
 
 
 func _section(heading: String, entries: Array) -> void:
@@ -205,6 +244,71 @@ func _instantiate(path: String) -> Node:
 	if not ResourceLoader.exists(path):
 		return null
 	return (load(path) as PackedScene).instantiate()
+
+
+## Creates a neighbour that shares the selected room's style and proportions,
+## positioned so their outer faces touch exactly, with the shared wall set to
+## DOORWAY on the source and OPEN on the new room.
+##
+## Getting that seam right by hand is the tedious part of building with brushes,
+## and it is pure arithmetic — so the tool does it.
+func _attach_room(direction: String) -> void:
+	var root := EditorInterface.get_edited_scene_root()
+	if root == null:
+		_report("Open a level scene first.", false)
+		return
+
+	var source: MapRoom = null
+	for node in EditorInterface.get_selection().get_selected_nodes():
+		if node is MapRoom:
+			source = node as MapRoom
+			break
+	if source == null:
+		_report("Select a Room first — Attach grows outwards from it.", false)
+		return
+
+	var spec: Dictionary = ATTACH[direction]
+
+	var room := MapRoom.new()
+	room.size = source.size
+	room.wall_thickness = source.wall_thickness
+	room.wall_surface = source.wall_surface
+	room.floor_surface = source.floor_surface
+	room.ceiling_surface = source.ceiling_surface
+	room.texture_scale = source.texture_scale
+	room.doorway_width = source.doorway_width
+	room.doorway_height = source.doorway_height
+	room.set(spec["new_wall"], MapRoom.WallMode.OPEN)
+	room.name = "Room"
+
+	# Half of each room along the shared axis, plus the wall band between them.
+	var depth: bool = spec["depth"]
+	var source_half: float = (source.size.z if depth else source.size.x) * 0.5
+	var new_half: float = (room.size.z if depth else room.size.x) * 0.5
+	var distance := source_half + source.wall_thickness + new_half
+
+	var axis: Vector3 = spec["axis"]
+	# Rotated through the source's own basis so attaching to an angled room works.
+	room.position = source.position + source.transform.basis * (axis * distance)
+	room.rotation = source.rotation
+
+	var parent := source.get_parent()
+	var wall_property: StringName = spec["source_wall"]
+	var previous_wall: int = source.get(wall_property)
+
+	var undo := plugin.get_undo_redo()
+	undo.create_action("Attach Room %s" % direction)
+	undo.add_do_method(parent, &"add_child", room, true)
+	undo.add_do_method(room, &"set_owner", root)
+	undo.add_do_reference(room)
+	undo.add_do_property(source, wall_property, MapRoom.WallMode.DOORWAY)
+	undo.add_undo_property(source, wall_property, previous_wall)
+	undo.add_undo_method(parent, &"remove_child", room)
+	undo.commit_action()
+
+	EditorInterface.get_selection().clear()
+	EditorInterface.get_selection().add_node(room)
+	_report("Attached a room to the %s with a doorway." % direction.to_lower(), true)
 
 
 # ------------------------------------------------------------------ actions --

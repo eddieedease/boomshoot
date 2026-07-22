@@ -194,6 +194,7 @@ func _tick_attack(delta: float) -> void:
 	# Windup, then a single hit, then recovery.
 	if not _did_swing and _state_timer <= 0.0:
 		_did_swing = true
+		Sfx.play_at(self, Sfx.ENEMY_ATTACK, -3.0)
 		_swing()
 		_state_timer = attack_cooldown - attack_windup
 
@@ -229,6 +230,12 @@ func _tick_pain(delta: float) -> void:
 
 
 func _enter(next: State) -> void:
+	# Alert only when waking up, so a room full of grunts doesn't roar in unison
+	# every time one of them re-enters CHASE.
+	if next == State.CHASE and state == State.IDLE:
+		Sfx.play_at(self, Sfx.ENEMY_ALERT)
+	elif next == State.PAIN:
+		Sfx.play_at(self, Sfx.ENEMY_PAIN)
 	state = next
 	_did_swing = false
 	match next:
@@ -347,6 +354,7 @@ func _die(direction: Vector3) -> void:
 	collision_mask = Layers.WORLD
 	_collision.disabled = true
 	velocity = direction.normalized() * 2.0
+	Sfx.play_at(self, Sfx.ENEMY_DEATH, 2.0)
 	Game.notify_enemy_died(self)
 	_play_death()
 

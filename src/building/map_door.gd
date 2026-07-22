@@ -113,6 +113,12 @@ func _physics_process(delta: float) -> void:
 	if is_equal_approx(_openness, target):
 		return
 
+	# Fires once, on the frame the panel starts moving each way.
+	if _openness == 0.0 and target > 0.0:
+		Sfx.play_at(self, Sfx.DOOR_OPEN, -2.0)
+	elif _openness == 1.0 and target < 1.0:
+		Sfx.play_at(self, Sfx.DOOR_CLOSE, -2.0)
+
 	# Normalise travel by distance so wide and tall doors move at the same pace.
 	var travel := maxf(_open_offset.length(), 0.001)
 	_openness = move_toward(_openness, target, (speed / travel) * delta)
@@ -160,6 +166,7 @@ func _try_open(user: Node3D) -> bool:
 	var is_player := user != null and user.is_in_group(&"player")
 	if required_key != &"" and is_player and not Game.has_key(required_key):
 		Game.post_message("The %s keycard is required." % String(required_key).to_upper())
+		Sfx.play_at(self, Sfx.DOOR_LOCKED, -4.0)
 		return false
 	# Enemies can't open locked doors at all.
 	if required_key != &"" and not is_player:

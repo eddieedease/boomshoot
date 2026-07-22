@@ -309,6 +309,7 @@ func take_damage(amount: float, _hit_position: Vector3, direction: Vector3, _sou
 
 	health = maxi(0, health - incoming)
 	_shake = minf(_shake + 0.4, 1.0)
+	Sfx.play_ui(Sfx.PLAYER_HURT, -4.0, 0.1)
 	Game.player_damaged.emit(incoming, direction)
 	_emit_stats()
 

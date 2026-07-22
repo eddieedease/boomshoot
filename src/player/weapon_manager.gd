@@ -116,6 +116,7 @@ func _try_fire(weapon: WeaponData) -> void:
 			start_reload()
 		else:
 			Game.post_message("Out of ammo", 1.0)
+			Sfx.play_ui(Sfx.DRY_FIRE, -6.0)
 			_cooldown = 0.4
 		return
 
@@ -129,6 +130,7 @@ func _try_fire(weapon: WeaponData) -> void:
 	for i in weapon.pellets:
 		_trace(weapon)
 
+	Sfx.play_ui(Sfx.PISTOL_SHOT, -3.0, 0.06)
 	Game.weapon_fired.emit()
 	if _owner_body != null and _owner_body.has_method("apply_recoil"):
 		_owner_body.apply_recoil(weapon.recoil_kick, weapon.screen_shake)
@@ -198,6 +200,7 @@ func start_reload() -> void:
 	if _in_mag[_index] >= weapon.mag_size or _reserve[_index] <= 0:
 		return
 	_reload_remaining = weapon.reload_time
+	Sfx.play_ui(Sfx.RELOAD, -6.0)
 	Game.weapon_reload_started.emit(weapon.reload_time)
 
 

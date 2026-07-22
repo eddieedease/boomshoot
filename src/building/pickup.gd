@@ -113,6 +113,7 @@ func _on_body_entered(body: Node3D) -> void:
 	if _taken or not body.is_in_group(Player.GROUP):
 		return
 	if _apply_to(body):
+		Sfx.play_at(self, Sfx.PICKUP, -4.0)
 		_consume()
 
 

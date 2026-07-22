@@ -20,6 +20,8 @@ func _ready() -> void:
 	await _settle(10)
 	await _test_level_loaded()
 	await _test_geometry_is_solid()
+	await _test_no_overlapping_floors()
+	await _test_room_attachment()
 	await _test_shooting_kills()
 	await _test_door_opens()
 	await _test_locked_exit()
@@ -75,6 +77,83 @@ func _test_geometry_is_solid() -> void:
 	var from := Vector3(0.0, 1.5, 0.0)
 	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3(0.0, 0.0, 20.0), Layers.WORLD)
 	_check(not space.intersect_ray(query).is_empty(), "start room south wall blocks a ray")
+
+
+## Two floor slabs occupying the same space put two upward-facing surfaces in
+## one plane, which is what makes the seam between rooms flicker. Sampling the
+## slab layer for points inside more than one shape catches that directly.
+func _test_no_overlapping_floors() -> void:
+	print("\n[smoke] no overlapping geometry")
+	var player := Game.player as Player
+	if player == null:
+		_check(false, "no player to query the world with")
+		return
+
+	var space := player.get_world_3d().direct_space_state
+	var worst := 0
+	var worst_at := Vector3.ZERO
+
+	# y = -0.25 sits inside the floor slabs and wall sills, below any prop. The
+	# odd fractional offsets matter: room edges land on whole and half metres, and
+	# a sample sitting exactly on a shared face counts as inside both shapes.
+	for x in range(-22, 12):
+		for z in range(-43, 8):
+			var query := PhysicsPointQueryParameters3D.new()
+			query.position = Vector3(x + 0.137, -0.25, z + 0.263)
+			query.collision_mask = Layers.WORLD
+			query.collide_with_areas = false
+			var hits := space.intersect_point(query, 8).size()
+			if hits > worst:
+				worst = hits
+				worst_at = query.position
+
+	_check(worst <= 1, "no point sits inside two solids (worst = %d at %s)" % [worst, worst_at])
+
+
+## Locks in the arithmetic the dock's Attach Room button uses: two rooms butted
+## by their outer faces must leave one continuous walkable floor and no overlap.
+func _test_room_attachment() -> void:
+	print("\n[smoke] attached rooms")
+	var holder := Node3D.new()
+	holder.position = Vector3(500.0, 0.0, 0.0)  # far from the demo level
+	add_child(holder)
+
+	var source := MapRoom.new()
+	source.size = Vector3(10.0, 4.0, 10.0)
+	source.wall_north = MapRoom.WallMode.DOORWAY
+	holder.add_child(source)
+
+	var neighbour := MapRoom.new()
+	neighbour.size = Vector3(10.0, 4.0, 10.0)
+	neighbour.wall_south = MapRoom.WallMode.OPEN
+	# Same formula as build_dock.gd: half + wall band + half.
+	neighbour.position = Vector3(0.0, 0.0, -(5.0 + source.wall_thickness + 5.0))
+	holder.add_child(neighbour)
+
+	await _settle(6)
+
+	var space := get_viewport().world_3d.direct_space_state
+	var gaps := 0
+	var overlaps := 0
+	# Walk the seam from deep in one room to deep in the other. The offset keeps
+	# samples off the exact face boundaries, which would read as false overlaps.
+	for step in 60:
+		var z := 3.93 - step * 0.29
+		var origin := holder.position + Vector3(0.0, 2.0, z)
+		var ray := PhysicsRayQueryParameters3D.create(origin, origin + Vector3.DOWN * 4.0, Layers.WORLD)
+		if space.intersect_ray(ray).is_empty():
+			gaps += 1
+
+		var point := PhysicsPointQueryParameters3D.new()
+		point.position = holder.position + Vector3(0.0, -0.25, z)
+		point.collision_mask = Layers.WORLD
+		if space.intersect_point(point, 8).size() > 1:
+			overlaps += 1
+
+	_check(gaps == 0, "floor is continuous through the shared doorway (%d gaps)" % gaps)
+	_check(overlaps == 0, "attached rooms do not overlap (%d overlapping samples)" % overlaps)
+
+	holder.queue_free()
 
 
 func _test_shooting_kills() -> void:
