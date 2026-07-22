@@ -374,40 +374,60 @@ const HAND := Color8(198, 138, 92)
 const HAND_DARK := Color8(150, 98, 60)
 
 
-## Pistol viewmodel, drawn slightly right of centre like a Doom weapon sprite.
-## `recoil` slides it down/back, `flash` adds the muzzle bloom.
+## First-person pistol viewmodel.
+##
+## Drawn looking down the weapon from behind, not side-on: the slide recedes
+## *up* the canvas towards the muzzle and tapers as it goes, so the top of the
+## image reads as "far away". The fist sits at the bottom with the forearm
+## running off the lower edge.
+##
+## `recoil` pushes the whole thing down and back, `flash` blooms the muzzle.
 func _draw_pistol(image: Image, recoil: float, flash: float) -> void:
-	var ox := GUN_W * 0.52
-	var oy := GUN_H - 4.0 + recoil * 10.0
+	var cx := GUN_W * 0.5
+	var rear_y := 70.0 + recoil * 11.0   # near end of the slide, by the hand
+	var muzzle_y := rear_y - 46.0        # far end
 
-	# Grip and hand.
-	_rect(image, int(ox - 8), int(oy - 34), 20, 34, METAL_LO)
-	_ellipse(image, ox + 2.0, oy - 20.0, 13.0, 15.0, HAND)
-	_ellipse(image, ox + 2.0, oy - 12.0, 13.0, 8.0, HAND_DARK)
+	# --- forearm and fist, running off the bottom of the frame ---
+	_rect(image, int(cx - 12), int(rear_y + 12), 24, int(GUN_H - rear_y), HAND_DARK)
+	_ellipse(image, cx, rear_y + 13.0, 15.0, 12.0, HAND)
+	# Knuckles read as the fingers wrapping around the far side of the grip.
 	for i in 4:
-		_ellipse(image, ox - 7.0 + i * 0.0, oy - 30.0 + i * 6.0, 4.0, 2.6, HAND)
+		_ellipse(image, cx - 10.5 + i * 7.0, rear_y + 6.0, 3.6, 3.2, HAND)
+	# Thumb, on the near side.
+	_ellipse(image, cx - 14.0, rear_y + 15.0, 5.0, 8.0, HAND_DARK)
 
-	# Frame and slide.
-	_rect(image, int(ox - 12), int(oy - 46), 40, 13, METAL)
-	_rect(image, int(ox - 12), int(oy - 46), 40, 2, METAL_HI)
-	_rect(image, int(ox - 12), int(oy - 35), 40, 2, METAL_LO)
-	# Barrel.
-	_rect(image, int(ox + 20), int(oy - 43), 16, 8, METAL)
-	_rect(image, int(ox + 20), int(oy - 43), 16, 2, METAL_HI)
-	# Rear sight.
-	_rect(image, int(ox - 10), int(oy - 50), 4, 5, METAL_HI)
-	# Trigger guard.
-	_rect(image, int(ox - 6), int(oy - 33), 14, 3, METAL_LO)
+	# --- slide, tapering with distance ---
+	var span := rear_y - muzzle_y
+	for y in range(int(muzzle_y), int(rear_y)):
+		var t := (y - muzzle_y) / span          # 0 at the muzzle, 1 at the rear
+		var half := lerpf(7.5, 11.5, t)
+		_rect(image, int(cx - half), y, int(half * 2.0), 1, METAL)
+		# Light catches the left edge, the right falls into shadow.
+		_rect(image, int(cx - half), y, 2, 1, METAL_HI)
+		_rect(image, int(cx + half - 2.0), y, 2, 1, METAL_LO)
+
+	# Slide serrations, near the rear where they'd actually be.
+	for i in 5:
+		_rect(image, int(cx - 9), int(rear_y - 12.0 + i * 2.5), 18, 1, METAL_LO)
+
+	# Ejection port on the right flank.
+	_rect(image, int(cx + 3), int(rear_y - 26.0), 6, 9, METAL_LO)
+
+	# Muzzle face, and the front and rear sights lined up down the middle.
+	_rect(image, int(cx - 8), int(muzzle_y - 3.0), 16, 4, METAL_LO)
+	_ellipse(image, cx, muzzle_y - 1.0, 3.2, 2.0, Color8(16, 16, 20))
+	_rect(image, int(cx - 1), int(muzzle_y + 1.0), 3, 4, METAL_HI)      # front sight
+	_rect(image, int(cx - 6), int(rear_y - 4.0), 4, 5, METAL_HI)        # rear sight
+	_rect(image, int(cx + 3), int(rear_y - 4.0), 4, 5, METAL_HI)
 
 	if flash > 0.0:
-		var fx := ox + 38.0
-		var fy := oy - 39.0
-		_ellipse(image, fx, fy, 16.0 * flash, 11.0 * flash, Color8(255, 236, 140))
-		_ellipse(image, fx, fy, 10.0 * flash, 6.5 * flash, Color8(255, 255, 232))
-		for i in 6:
-			var a := TAU * i / 6.0
-			_ellipse(image, fx + cos(a) * 15.0 * flash, fy + sin(a) * 11.0 * flash,
-					4.0 * flash, 3.0 * flash, Color8(255, 200, 90))
+		var fy := muzzle_y - 8.0
+		_ellipse(image, cx, fy, 17.0 * flash, 13.0 * flash, Color8(255, 236, 140))
+		_ellipse(image, cx, fy, 10.5 * flash, 8.0 * flash, Color8(255, 255, 232))
+		for i in 7:
+			var a := TAU * i / 7.0
+			_ellipse(image, cx + cos(a) * 16.0 * flash, fy + sin(a) * 12.0 * flash,
+					4.0 * flash, 3.2 * flash, Color8(255, 200, 90))
 
 
 func _gen_pistol() -> void:

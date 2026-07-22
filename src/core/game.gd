@@ -22,6 +22,8 @@ signal weapon_reload_started(duration: float)
 signal enemy_died(enemy: Node3D)
 signal keys_changed(keys: Array)
 signal message_posted(text: String, duration: float)
+## What the player is currently looking at, if it can be used. Empty = nothing.
+signal interact_prompt_changed(prompt: String)
 
 # --- Flow -------------------------------------------------------------------
 signal level_started()

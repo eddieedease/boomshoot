@@ -23,6 +23,7 @@ var _weapon_label: Label
 var _kills_label: Label
 var _keys_box: HBoxContainer
 var _message_label: Label
+var _interact_label: Label
 var _damage_flash: ColorRect
 
 var _weapon: WeaponData = null
@@ -32,6 +33,9 @@ var _fire_frame_timer := 0.0
 var _bob_phase := 0.0
 var _recoil := 0.0
 var _message_timer := 0.0
+var _prompt_text := ""
+## Tracks the last device used so the prompt shows the right button.
+var _using_gamepad := false
 
 
 func _ready() -> void:
@@ -85,6 +89,21 @@ func _build() -> void:
 	_weapon_label = _make_stat(bar, "WEAPON", DIM)
 	_ammo_label = _make_stat(bar, "AMMO", AMBER)
 
+	# --- interact prompt, just under the crosshair ---
+	_interact_label = Label.new()
+	_interact_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_interact_label.anchor_top = 0.5
+	_interact_label.anchor_bottom = 0.5
+	_interact_label.offset_top = 54.0
+	_interact_label.offset_bottom = 94.0
+	_interact_label.offset_left = -400.0
+	_interact_label.offset_right = 400.0
+	_interact_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_style(_interact_label, 24, Color(0.92, 0.94, 1.0))
+	_interact_label.visible = false
+	_interact_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_interact_label)
+
 	# --- transient message ---
 	_message_label = Label.new()
 	_message_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
@@ -131,6 +150,7 @@ func _connect_signals() -> void:
 	Game.player_damaged.connect(_on_player_damaged)
 	Game.keys_changed.connect(_on_keys_changed)
 	Game.message_posted.connect(_on_message)
+	Game.interact_prompt_changed.connect(_on_interact_prompt)
 	Game.enemy_died.connect(func(_e: Node3D) -> void: _refresh_kills())
 	Game.level_started.connect(_refresh_kills)
 
@@ -228,6 +248,34 @@ func _on_keys_changed(keys: Array) -> void:
 		swatch.color = Pickup.KEY_COLORS.get(key, Color.WHITE)
 		swatch.custom_minimum_size = Vector2(20, 30)
 		_keys_box.add_child(swatch)
+
+
+## Watches which device the player is actually using, so the interact prompt
+## says "E" on a keyboard and "X" on a pad without any settings screen.
+func _input(event: InputEvent) -> void:
+	var gamepad := _using_gamepad
+	if event is InputEventJoypadButton:
+		gamepad = true
+	elif event is InputEventJoypadMotion:
+		# Stick drift would flip this constantly, so require a real deflection.
+		if absf((event as InputEventJoypadMotion).axis_value) > 0.5:
+			gamepad = true
+	elif event is InputEventKey or event is InputEventMouseButton or event is InputEventMouseMotion:
+		gamepad = false
+	if gamepad != _using_gamepad:
+		_using_gamepad = gamepad
+		_refresh_prompt()
+
+
+func _on_interact_prompt(prompt: String) -> void:
+	_prompt_text = prompt
+	_refresh_prompt()
+
+
+func _refresh_prompt() -> void:
+	_interact_label.visible = _prompt_text != ""
+	if _interact_label.visible:
+		_interact_label.text = "[%s]  %s" % ["X" if _using_gamepad else "E", _prompt_text]
 
 
 func _on_message(text: String, duration: float) -> void:

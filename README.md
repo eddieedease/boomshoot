@@ -27,6 +27,9 @@ the mouse captured.
 
 All of it is editable in **Project Settings → Input Map**.
 
+Doors set to `USE` show a prompt under the crosshair when you look at them, and
+the button hint follows whichever device you last touched.
+
 ---
 
 ## Building levels
@@ -58,9 +61,16 @@ Then select the part and tune it in the Inspector. Geometry rebuilds live.
 
 Two rules worth knowing:
 
-- **Rooms connect by sharing a wall plane.** Set the shared wall to `DOORWAY` on
-  one room and `OPEN` on its neighbour, so only one of them builds geometry
-  there. Doing it on both z-fights.
+- **Butt rooms together by their outer faces, not their interiors.** A room
+  occupies its `size` plus a wall band of `wall_thickness` on every side that
+  has a wall. So a neighbour's interior must stop where that wall band *ends*.
+  Set the shared wall to `DOORWAY` on one room and `OPEN` on the other, and only
+  the `DOORWAY` room builds anything in the seam.
+
+  Overlapping two rooms puts two upward-facing floors in the same plane, which
+  is what causes depth flicker. Floor and ceiling slabs deliberately do not
+  overhang under the walls; each wall carries its own sill instead, so doorways
+  still have something to walk across.
 - **Keep `step_rise` at or below the player's `step_height`** (0.45 default) or
   the stairs become an invisible wall.
 

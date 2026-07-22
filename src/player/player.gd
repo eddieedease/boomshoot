@@ -62,6 +62,7 @@ var _bob_phase := 0.0
 var _recoil_pitch := 0.0
 var _shake := 0.0
 var _capsule: CapsuleShape3D
+var _interact_prompt := ""
 
 
 func _ready() -> void:
@@ -114,6 +115,7 @@ func _process(delta: float) -> void:
 	if _active and is_alive:
 		_gamepad_look(delta)
 	_update_view(delta)
+	_update_interact_prompt()
 
 
 func _physics_process(delta: float) -> void:
@@ -261,14 +263,36 @@ func _has_headroom() -> bool:
 # ----------------------------------------------------------------- interact --
 
 func _try_interact() -> void:
+	var target := _interact_target()
+	if target != null:
+		target.interact(self)
+
+
+## Nearest thing under the crosshair that can be used, or null. Walks up the
+## tree so a collision shape parented under an actor still resolves to it.
+func _interact_target() -> Node:
 	if not _interact_ray.is_colliding():
-		return
+		return null
 	var node := _interact_ray.get_collider() as Node
 	while node != null:
 		if node.has_method(&"interact"):
-			node.interact(self)
-			return
+			return node
 		node = node.get_parent()
+	return null
+
+
+## Publishes what the player could use right now, so the HUD can prompt. Without
+## this a `USE` door just looks like a wall.
+func _update_interact_prompt() -> void:
+	var prompt := ""
+	if _active and is_alive:
+		var target := _interact_target()
+		if target != null:
+			prompt = target.get_interact_prompt() if target.has_method(&"get_interact_prompt") \
+					else "Use"
+	if prompt != _interact_prompt:
+		_interact_prompt = prompt
+		Game.interact_prompt_changed.emit(prompt)
 
 
 # ----------------------------------------------------------------- vitality --

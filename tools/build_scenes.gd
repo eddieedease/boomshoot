@@ -204,6 +204,10 @@ func _build_main() -> void:
 ##
 ## Every value below is also editable in the inspector once the scene is open —
 ## nothing here is baked into geometry.
+##
+## Rooms connect by butting their OUTER faces together: one side declares the
+## DOORWAY, the neighbour declares OPEN, and the neighbour's interior stops at
+## the doorway wall's outer face rather than running into it.
 func _build_demo_level() -> void:
 	var root := Node3D.new()
 	root.name = "DemoLevel"
@@ -228,8 +232,10 @@ func _build_demo_level() -> void:
 
 	# --- Corridor -------------------------------------------------------------
 	var corridor := MapRoom.new()
+	# 13 deep, not 14: the interior has to stop where the start room's north wall
+	# and the arena's south wall begin, or the floors overlap and flicker.
 	corridor.position = Vector3(0.0, 0.0, -13.0)
-	corridor.size = Vector3(4.0, 3.5, 14.0)
+	corridor.size = Vector3(4.0, 3.5, 13.0)
 	corridor.wall_surface = MapMaterials.Surface.TECH
 	corridor.floor_surface = MapMaterials.Surface.GRATE
 	corridor.wall_north = MapRoom.WallMode.OPEN
@@ -266,8 +272,10 @@ func _build_demo_level() -> void:
 
 	# Raised platform with the exit on top, reached by stairs.
 	var platform := MapBlock.new()
-	platform.position = Vector3(6.0, 0.0, -36.0)
-	platform.size = Vector3(8.0, 2.5, 8.0)
+	# Reaches 0.2m into the east wall so its side face is hidden rather than
+	# sitting exactly on the wall's face.
+	platform.position = Vector3(6.1, 0.0, -36.0)
+	platform.size = Vector3(8.2, 2.5, 8.0)
 	platform.surface = MapMaterials.Surface.TECH
 	_attach(root, platform, root, "ExitPlatform")
 
@@ -301,7 +309,7 @@ func _build_demo_level() -> void:
 
 	# --- Key vault ------------------------------------------------------------
 	var vault := MapRoom.new()
-	vault.position = Vector3(-15.0, 0.0, -31.0)
+	vault.position = Vector3(-15.5, 0.0, -31.0)
 	vault.size = Vector3(10.0, 4.0, 10.0)
 	vault.wall_surface = MapMaterials.Surface.BRICK
 	vault.floor_surface = MapMaterials.Surface.CONCRETE
@@ -317,13 +325,13 @@ func _build_demo_level() -> void:
 	vault_door.open_mode = MapDoor.OpenMode.USE
 	_attach(root, vault_door, root, "VaultDoor")
 
-	_light(root, "VaultLight", Vector3(-15.0, 3.5, -31.0), Color(1.0, 0.5, 0.45), 3.0, 12.0)
+	_light(root, "VaultLight", Vector3(-15.5, 3.5, -31.0), Color(1.0, 0.5, 0.45), 3.0, 12.0)
 
-	_pickup(root, "RedKey", Vector3(-15.0, 1.2, -34.0), Pickup.Kind.KEY, 1, &"red")
-	_pickup(root, "VaultArmor", Vector3(-17.5, 0.9, -28.5), Pickup.Kind.ARMOR, 50)
+	_pickup(root, "RedKey", Vector3(-15.5, 1.2, -34.0), Pickup.Kind.KEY, 1, &"red")
+	_pickup(root, "VaultArmor", Vector3(-18.0, 0.9, -28.5), Pickup.Kind.ARMOR, 50)
 
 	var vault_grunt := grunt.instantiate()
-	vault_grunt.position = Vector3(-15.0, 0.1, -29.0)
+	vault_grunt.position = Vector3(-15.5, 0.1, -29.0)
 	_attach(root, vault_grunt, root, "VaultGrunt")
 
 	_save_scene(root, LEVEL_PATH)

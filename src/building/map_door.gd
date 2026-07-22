@@ -142,6 +142,16 @@ func interact(_user: Node3D) -> bool:
 	return _try_open(_user)
 
 
+## Text for the HUD prompt. Empty means "don't show anything" — proximity doors
+## open themselves, so telling the player to press a button would be a lie.
+func get_interact_prompt() -> String:
+	if open_mode != OpenMode.USE or _want_open:
+		return ""
+	if required_key != &"" and not Game.has_key(required_key):
+		return "Locked \u2014 needs the %s keycard" % String(required_key).to_upper()
+	return "Open door"
+
+
 func _try_open(user: Node3D) -> bool:
 	if _want_open:
 		_hold_timer = auto_close_delay
