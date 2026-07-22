@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/entities/enemy.gd" id="1_ugyr8"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_idle.png" id="2_ola5r"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_walk_0.png" id="3_uqx0a"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_walk_1.png" id="4_tfah5"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_walk_2.png" id="5_1avy8"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_walk_3.png" id="6_pk764"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_attack.png" id="7_qrfpp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_pain.png" id="8_7lpt6"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_die_0.png" id="9_veufj"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_die_1.png" id="10_thm70"]
+[ext_resource type="Texture2D" path="res://assets/sprites/grunt_die_2.png" id="11_gexg1"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_l4ntm"]
+radius = 0.45
+height = 1.7
+
+[node name="Grunt" type="CharacterBody3D" unique_id=1224603472]
+script = ExtResource("1_ugyr8")
+sprite_idle = ExtResource("2_ola5r")
+sprite_walk = Array[Texture2D]([ExtResource("3_uqx0a"), ExtResource("4_tfah5"), ExtResource("5_1avy8"), ExtResource("6_pk764")])
+sprite_attack = ExtResource("7_qrfpp")
+sprite_pain = ExtResource("8_7lpt6")
+sprite_die = Array[Texture2D]([ExtResource("9_veufj"), ExtResource("10_thm70"), ExtResource("11_gexg1")])
+
+[node name="Collision" type="CollisionShape3D" parent="." unique_id=1378746556]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+shape = SubResource("CapsuleShape3D_l4ntm")
+
+[node name="Sprite" type="Sprite3D" parent="." unique_id=687349451]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.96, 0)
+pixel_size = 0.04
+billboard = 2
+shaded = true
+alpha_cut = 1
+texture_filter = 0
+texture = ExtResource("2_ola5r")

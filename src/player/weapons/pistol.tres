@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://src/player/weapon_data.gd" id="1_45tod"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pistol_fire_0.png" id="2_mpo4i"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pistol_fire_1.png" id="3_fat1o"]
+[ext_resource type="Texture2D" path="res://assets/sprites/pistol_idle.png" id="4_jfg2k"]
+
+[resource]
+script = ExtResource("1_45tod")
+damage = 15.0
+spread_degrees = 0.6
+spread_bloom = 1.6
+headshot_multiplier = 2.5
+shots_per_second = 5.5
+reserve_max = 150
+reserve_start = 60
+reload_time = 1.0
+recoil_kick = 1.6
+screen_shake = 0.18
+sprite_idle = ExtResource("4_jfg2k")
+sprite_fire = Array[Texture2D]([ExtResource("2_mpo4i"), ExtResource("3_fat1o")])
+fire_frame_time = 0.05

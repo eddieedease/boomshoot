@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/main.gd" id="1_gh0ne"]
+[ext_resource type="PackedScene" path="res://src/player/player.tscn" id="2_5q4o7"]
+
+[node name="Main" type="Node" unique_id=1889212578]
+script = ExtResource("1_gh0ne")
+player_scene = ExtResource("2_5q4o7")
+
+[node name="LevelRoot" type="Node3D" parent="." unique_id=1675518874]
